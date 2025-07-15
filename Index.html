@@ -3,25 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Controle Financeiro Pessoal</title>
+  <title>Financeiro Pessoal Avançado</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
+    :root {
+      --bg: #ffffff;
+      --text: #000000;
+      --card: #f1f5f9;
+      --positivo: green;
+      --negativo: red;
+    }
+
+    .dark-mode {
+      --bg: #121212;
+      --text: #ffffff;
+      --card: #1e1e1e;
+    }
+
     body {
       font-family: Arial, sans-serif;
-      background: #f1f5f9;
+      background: var(--bg);
+      color: var(--text);
       margin: 0;
       padding: 20px;
+      transition: all 0.3s ease;
     }
     h1 {
       text-align: center;
-      color: #333;
     }
     .container {
-      max-width: 600px;
+      max-width: 800px;
       margin: auto;
-      background: white;
+      background: var(--card);
       padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 0 10px #ccc;
+      box-shadow: 0 0 10px #aaa;
     }
     input, select, button {
       padding: 10px;
@@ -42,83 +58,190 @@
       text-align: left;
     }
     .saldo {
-      font-size: 1.2em;
+      font-size: 1.3em;
       margin-top: 10px;
       font-weight: bold;
     }
-    .positivo { color: green; }
-    .negativo { color: red; }
+    .positivo { color: var(--positivo); }
+    .negativo { color: var(--negativo); }
+    .botoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .botoes button {
+      flex: 1;
+    }
+    canvas {
+      margin-top: 30px;
+      max-height: 300px;
+    }
+    .filtros {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .filtros input {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
-  <h1>Controle Financeiro</h1>
+  <h1>Financeiro Pessoal Avançado</h1>
   <div class="container">
     <form id="form">
       <input type="text" id="descricao" placeholder="Descrição" required />
-      <input type="number" id="valor" placeholder="Valor (use negativo para despesa)" required />
+      <input type="number" id="valor" placeholder="Valor (negativo = despesa)" required />
+      <input type="date" id="data" required />
+      <select id="categoria" required>
+        <option value="" disabled selected>Categoria</option>
+        <option value="Alimentação">Alimentação</option>
+        <option value="Transporte">Transporte</option>
+        <option value="Lazer">Lazer</option>
+        <option value="Salário">Salário</option>
+        <option value="Outros">Outros</option>
+      </select>
       <button type="submit">Adicionar Transação</button>
     </form>
 
     <div class="saldo" id="saldo">Saldo: R$ 0,00</div>
 
+    <div class="filtros">
+      <input type="date" id="filtroInicio" />
+      <input type="date" id="filtroFim" />
+      <button onclick="aplicarFiltro()">🔍 Filtrar</button>
+    </div>
+
+    <div class="botoes">
+      <button onclick="imprimirRelatorio()">🖨️ Imprimir</button>
+      <button onclick="exportarCSV()">⬇️ Exportar CSV</button>
+      <button onclick="limparTransacoes()">🗑️ Limpar Tudo</button>
+      <button onclick="alternarTema()">🌓 Tema</button>
+    </div>
+
     <table>
       <thead>
         <tr>
+          <th>Data</th>
           <th>Descrição</th>
+          <th>Categoria</th>
           <th>Valor</th>
         </tr>
       </thead>
-      <tbody id="lista-transacoes">
-        <!-- Transações vão aqui -->
-      </tbody>
+      <tbody id="lista-transacoes"></tbody>
     </table>
+
+    <canvas id="graficoPizza"></canvas>
   </div>
 
   <script>
     const form = document.getElementById("form");
     const lista = document.getElementById("lista-transacoes");
     const saldo = document.getElementById("saldo");
-    let transacoes = [];
+    const graficoPizza = document.getElementById("graficoPizza").getContext("2d");
 
-    function atualizarTela() {
+    const filtroInicio = document.getElementById("filtroInicio");
+    const filtroFim = document.getElementById("filtroFim");
+
+    let transacoes = JSON.parse(localStorage.getItem("transacoes")) || [];
+    let grafico;
+
+    function salvar() {
+      localStorage.setItem("transacoes", JSON.stringify(transacoes));
+    }
+
+    function atualizarTela(filtradas = transacoes) {
       lista.innerHTML = "";
-      let total = 0;
-
-      transacoes.forEach((transacao) => {
-        const linha = document.createElement("tr");
-        const valorFormatado = Number(transacao.valor).toLocaleString("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-        });
-
-        linha.innerHTML = `
-          <td>${transacao.descricao}</td>
-          <td class="${transacao.valor >= 0 ? 'positivo' : 'negativo'}">${valorFormatado}</td>
+      let total = 0, receitas = 0, despesas = 0;
+      filtradas.forEach(t => {
+        const tr = document.createElement("tr");
+        const valorFormatado = t.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+        tr.innerHTML = `
+          <td>${t.data}</td>
+          <td>${t.descricao}</td>
+          <td>${t.categoria}</td>
+          <td class="${t.valor >= 0 ? 'positivo' : 'negativo'}">${valorFormatado}</td>
         `;
-
-        lista.appendChild(linha);
-        total += transacao.valor;
+        lista.appendChild(tr);
+        total += t.valor;
+        if (t.valor >= 0) receitas += t.valor;
+        else despesas += Math.abs(t.valor);
       });
 
-      const totalFormatado = total.toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      });
-      saldo.textContent = `Saldo: ${totalFormatado}`;
+      saldo.textContent = `Saldo: ${total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}`;
       saldo.className = "saldo " + (total >= 0 ? "positivo" : "negativo");
+
+      atualizarGrafico(receitas, despesas);
+    }
+
+    function atualizarGrafico(receitas, despesas) {
+      if (grafico) grafico.destroy();
+      grafico = new Chart(graficoPizza, {
+        type: 'pie',
+        data: {
+          labels: ['Receitas', 'Despesas'],
+          datasets: [{
+            data: [receitas, despesas],
+            backgroundColor: ['#4caf50', '#f44336']
+          }]
+        }
+      });
+    }
+
+    function aplicarFiltro() {
+      const inicio = filtroInicio.value;
+      const fim = filtroFim.value;
+      const filtradas = transacoes.filter(t => {
+        return (!inicio || t.data >= inicio) && (!fim || t.data <= fim);
+      });
+      atualizarTela(filtradas);
+    }
+
+    function exportarCSV() {
+      let csv = "Data,Descrição,Categoria,Valor\n";
+      transacoes.forEach(t => {
+        csv += `${t.data},"${t.descricao}",${t.categoria},${t.valor}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "financeiro.csv";
+      a.click();
+    }
+
+    function imprimirRelatorio() {
+      window.print();
+    }
+
+    function limparTransacoes() {
+      if (confirm("Deseja apagar tudo?")) {
+        transacoes = [];
+        salvar();
+        atualizarTela();
+      }
+    }
+
+    function alternarTema() {
+      document.body.classList.toggle("dark-mode");
     }
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
-      const descricao = document.getElementById("descricao").value;
+      const descricao = document.getElementById("descricao").value.trim();
       const valor = parseFloat(document.getElementById("valor").value);
+      const data = document.getElementById("data").value;
+      const categoria = document.getElementById("categoria").value;
 
-      if (descricao && !isNaN(valor)) {
-        transacoes.push({ descricao, valor });
-        atualizarTela();
-        form.reset();
-      }
+      if (!descricao || isNaN(valor) || !data || !categoria) return;
+
+      transacoes.push({ descricao, valor, data, categoria });
+      form.reset();
+      salvar();
+      atualizarTela();
     });
+
+    atualizarTela();
   </script>
 </body>
 </html>
