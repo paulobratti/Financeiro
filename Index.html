@@ -2,93 +2,169 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Financeiro Pessoal Avançado</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Financeiro com Login</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <style>
     :root {
-      --bg: #ffffff;
-      --text: #000000;
-      --card: #f1f5f9;
-      --positivo: green;
-      --negativo: red;
+      --bg: #f9fafb;
+      --card: #ffffff;
+      --text: #111827;
+      --accent: #3b82f6;
+      --positivo: #16a34a;
+      --negativo: #dc2626;
     }
 
     .dark-mode {
-      --bg: #121212;
-      --text: #ffffff;
-      --card: #1e1e1e;
+      --bg: #111827;
+      --card: #1f2937;
+      --text: #f9fafb;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       background: var(--bg);
       color: var(--text);
-      margin: 0;
-      padding: 20px;
-      transition: all 0.3s ease;
+      padding: 1rem;
+      transition: 0.3s;
     }
+
     h1 {
       text-align: center;
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
     }
-    .container {
-      max-width: 800px;
+
+    .container, .login-container {
+      max-width: 900px;
       margin: auto;
       background: var(--card);
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px #aaa;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     }
-    input, select, button {
-      padding: 10px;
-      margin: 10px 0;
-      width: 100%;
-      box-sizing: border-box;
-      border-radius: 5px;
-      border: 1px solid #ccc;
+
+    form, .filtros, .botoes {
+      display: grid;
+      gap: 0.75rem;
     }
+
+    form input, form select, form button {
+      padding: 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+    }
+
+    form button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    form button:hover {
+      background: #2563eb;
+    }
+
+    .saldo {
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-top: 1rem;
+      color: var(--positivo);
+    }
+
+    .saldo.negativo {
+      color: var(--negativo);
+    }
+
+    .botoes {
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      margin-top: 1rem;
+    }
+
+    .botoes button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .filtros {
+      margin-top: 1rem;
+      grid-template-columns: 1fr 1fr auto;
+    }
+
     table {
       width: 100%;
+      margin-top: 1.5rem;
       border-collapse: collapse;
-      margin-top: 20px;
     }
-    th, td {
-      padding: 10px;
-      border-bottom: 1px solid #ccc;
+
+    table thead {
+      background: #e5e7eb;
+    }
+
+    table th, table td {
+      padding: 0.75rem;
       text-align: left;
+      border-bottom: 1px solid #ccc;
     }
-    .saldo {
-      font-size: 1.3em;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    .positivo { color: var(--positivo); }
-    .negativo { color: var(--negativo); }
-    .botoes {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .botoes button {
-      flex: 1;
-    }
+
     canvas {
-      margin-top: 30px;
-      max-height: 300px;
+      margin-top: 2rem;
+      width: 100%;
+      max-height: 320px;
     }
-    .filtros {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
+
+    .hidden {
+      display: none;
     }
-    .filtros input {
-      flex: 1;
+
+    .logout {
+      text-align: right;
+      margin-top: 10px;
+    }
+
+    .logout button {
+      background: red;
+      color: white;
+    }
+
+    @media (max-width: 768px) {
+      .filtros {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>Financeiro Pessoal Avançado</h1>
-  <div class="container">
+  <!-- LOGIN -->
+  <div id="login-container" class="login-container">
+    <h1>Login / Cadastro</h1>
+    <form id="login-form">
+      <input type="email" id="login-email" placeholder="E-mail" required />
+      <input type="password" id="login-password" placeholder="Senha" required />
+      <button type="submit">Entrar</button>
+      <button type="button" onclick="registrarUsuario()">Cadastrar Novo Usuário</button>
+    </form>
+  </div>
+
+  <!-- SISTEMA FINANCEIRO -->
+  <div id="financeiro" class="container hidden">
+    <div class="logout">
+      <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</button>
+    </div>
+
+    <h1>Controle Financeiro</h1>
     <form id="form">
       <input type="text" id="descricao" placeholder="Descrição" required />
       <input type="number" id="valor" placeholder="Valor (negativo = despesa)" required />
@@ -113,10 +189,10 @@
     </div>
 
     <div class="botoes">
-      <button onclick="imprimirRelatorio()">🖨️ Imprimir</button>
-      <button onclick="exportarCSV()">⬇️ Exportar CSV</button>
-      <button onclick="limparTransacoes()">🗑️ Limpar Tudo</button>
-      <button onclick="alternarTema()">🌓 Tema</button>
+      <button onclick="imprimirRelatorio()"><i class="fas fa-print"></i> Imprimir</button>
+      <button onclick="exportarCSV()"><i class="fas fa-file-csv"></i> CSV</button>
+      <button onclick="limparTransacoes()"><i class="fas fa-trash"></i> Limpar</button>
+      <button onclick="alternarTema()"><i class="fas fa-moon"></i> Tema</button>
     </div>
 
     <table>
@@ -135,19 +211,65 @@
   </div>
 
   <script>
+    let transacoes = [];
+    let grafico;
+    const usuarioAtual = localStorage.getItem("usuarioLogado");
+
+    if (usuarioAtual) mostrarSistema();
+
+    function registrarUsuario() {
+      const email = document.getElementById("login-email").value;
+      const senha = document.getElementById("login-password").value;
+      const usuarios = JSON.parse(localStorage.getItem("usuarios")) || {};
+      if (usuarios[email]) {
+        alert("Usuário já existe.");
+      } else {
+        usuarios[email] = senha;
+        localStorage.setItem("usuarios", JSON.stringify(usuarios));
+        alert("Usuário cadastrado com sucesso!");
+      }
+    }
+
+    document.getElementById("login-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const email = document.getElementById("login-email").value;
+      const senha = document.getElementById("login-password").value;
+      const usuarios = JSON.parse(localStorage.getItem("usuarios")) || {};
+
+      if (usuarios[email] === senha) {
+        localStorage.setItem("usuarioLogado", email);
+        mostrarSistema();
+      } else {
+        alert("Usuário ou senha incorretos.");
+      }
+    });
+
+    function mostrarSistema() {
+      document.getElementById("login-container").classList.add("hidden");
+      document.getElementById("financeiro").classList.remove("hidden");
+      carregarTransacoes();
+      atualizarTela();
+    }
+
+    function logout() {
+      localStorage.removeItem("usuarioLogado");
+      location.reload();
+    }
+
     const form = document.getElementById("form");
     const lista = document.getElementById("lista-transacoes");
     const saldo = document.getElementById("saldo");
     const graficoPizza = document.getElementById("graficoPizza").getContext("2d");
-
     const filtroInicio = document.getElementById("filtroInicio");
     const filtroFim = document.getElementById("filtroFim");
 
-    let transacoes = JSON.parse(localStorage.getItem("transacoes")) || [];
-    let grafico;
+    function carregarTransacoes() {
+      const dados = JSON.parse(localStorage.getItem("transacoes_" + usuarioAtual)) || [];
+      transacoes = dados;
+    }
 
     function salvar() {
-      localStorage.setItem("transacoes", JSON.stringify(transacoes));
+      localStorage.setItem("transacoes_" + usuarioAtual, JSON.stringify(transacoes));
     }
 
     function atualizarTela(filtradas = transacoes) {
@@ -172,6 +294,7 @@
       saldo.className = "saldo " + (total >= 0 ? "positivo" : "negativo");
 
       atualizarGrafico(receitas, despesas);
+      salvar();
     }
 
     function atualizarGrafico(receitas, despesas) {
@@ -237,11 +360,8 @@
 
       transacoes.push({ descricao, valor, data, categoria });
       form.reset();
-      salvar();
       atualizarTela();
     });
-
-    atualizarTela();
   </script>
 </body>
 </html>
