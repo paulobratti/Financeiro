@@ -1,1 +1,124 @@
-# Financeiro
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Controle Financeiro Pessoal</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
+    }
+    input, select, button {
+      padding: 10px;
+      margin: 10px 0;
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+      text-align: left;
+    }
+    .saldo {
+      font-size: 1.2em;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .positivo { color: green; }
+    .negativo { color: red; }
+  </style>
+</head>
+<body>
+  <h1>Controle Financeiro</h1>
+  <div class="container">
+    <form id="form">
+      <input type="text" id="descricao" placeholder="Descrição" required />
+      <input type="number" id="valor" placeholder="Valor (use negativo para despesa)" required />
+      <button type="submit">Adicionar Transação</button>
+    </form>
+
+    <div class="saldo" id="saldo">Saldo: R$ 0,00</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Descrição</th>
+          <th>Valor</th>
+        </tr>
+      </thead>
+      <tbody id="lista-transacoes">
+        <!-- Transações vão aqui -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const form = document.getElementById("form");
+    const lista = document.getElementById("lista-transacoes");
+    const saldo = document.getElementById("saldo");
+    let transacoes = [];
+
+    function atualizarTela() {
+      lista.innerHTML = "";
+      let total = 0;
+
+      transacoes.forEach((transacao) => {
+        const linha = document.createElement("tr");
+        const valorFormatado = Number(transacao.valor).toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        });
+
+        linha.innerHTML = `
+          <td>${transacao.descricao}</td>
+          <td class="${transacao.valor >= 0 ? 'positivo' : 'negativo'}">${valorFormatado}</td>
+        `;
+
+        lista.appendChild(linha);
+        total += transacao.valor;
+      });
+
+      const totalFormatado = total.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      });
+      saldo.textContent = `Saldo: ${totalFormatado}`;
+      saldo.className = "saldo " + (total >= 0 ? "positivo" : "negativo");
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const descricao = document.getElementById("descricao").value;
+      const valor = parseFloat(document.getElementById("valor").value);
+
+      if (descricao && !isNaN(valor)) {
+        transacoes.push({ descricao, valor });
+        atualizarTela();
+        form.reset();
+      }
+    });
+  </script>
+</body>
+</html>
